@@ -26,11 +26,6 @@ BEGIN
     INSERT INTO auditoria_general(tabla_afectada, operacion, usuario, datos_anteriores, datos_nuevos)
     VALUES (TG_TABLE_NAME, v_operacion, current_user, v_datos_anteriores, v_datos_nuevos);
 
-    -- Si la operación es una inserción en reserva, insertar en historial_prestamo
-    IF TG_OP = 'INSERT' AND TG_TABLE_NAME = 'reserva' THEN
-        INSERT INTO historial_prestamo(id_socio, id_copia, fecha_prestamo, fecha_devolucion, observaciones)
-        VALUES (NEW.id_socio, NEW.id_copia, NEW.fecha_reserva, NULL, 'Reserva creada automáticamente');
-    END IF;
 
     RETURN NULL;
 END;
