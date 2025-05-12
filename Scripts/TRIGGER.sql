@@ -7,7 +7,7 @@ DECLARE
     v_datos_anteriores JSONB;
     v_datos_nuevos JSONB;
 BEGIN
-
+    -- Determinar la operación realizada
     IF TG_OP = 'INSERT' THEN
         v_operacion := 'INSERT';
         v_datos_anteriores := NULL;
@@ -20,12 +20,38 @@ BEGIN
         v_operacion := 'DELETE';
         v_datos_anteriores := to_jsonb(OLD);
         v_datos_nuevos := NULL;
+    ELSE
+        RAISE NOTICE 'Operación no soportada para auditoría: %', TG_OP;
+        RETURN NULL;
     END IF;
 
-
-    INSERT INTO auditoria_general(tabla_afectada, operacion, usuario, datos_anteriores, datos_nuevos)
-    VALUES (TG_TABLE_NAME, v_operacion, current_user, v_datos_anteriores, v_datos_nuevos);
-
+    -- Validar que la tabla auditoria_general existe antes de insertar
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = 'auditoria_general'
+        AND table_schema = 'public'
+    ) THEN
+        -- Insertar el registro de auditoría
+        INSERT INTO auditoria_general(
+            tabla_afectada,
+            operacion,
+            usuario,
+            datos_anteriores,
+            datos_nuevos,
+            fecha
+        )
+        VALUES (
+            TG_TABLE_NAME,
+            v_operacion,
+            current_user,
+            v_datos_anteriores,
+            v_datos_nuevos,
+            CURRENT_TIMESTAMP
+        );
+    ELSE
+        RAISE WARNING 'La tabla de auditoría_general no existe. Auditoría no registrada.';
+    END IF;
 
     RETURN NULL;
 END;
